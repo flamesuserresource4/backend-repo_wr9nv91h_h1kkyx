@@ -11,8 +11,8 @@ Model name is converted to lowercase for the collection name:
 - BlogPost -> "blogs" collection
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, Literal
 
 # Example schemas (replace with your own):
 
@@ -41,8 +41,24 @@ class Product(BaseModel):
 # Add your own schemas here:
 # --------------------------------------------------
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Waitlist(BaseModel):
+    """
+    Waitlist collection schema for Locat8
+    Collection name: "waitlist"
+    """
+    email: EmailStr = Field(..., description="User email for the waitlist")
+    name: Optional[str] = Field(None, description="Optional name")
+    source: Optional[str] = Field(None, description="Traffic source or UTM source")
+    referrer: Optional[str] = Field(None, description="Referrer URL")
+    user_agent: Optional[str] = Field(None, description="User agent string from the browser")
+
+class Analytics(BaseModel):
+    """Generic analytics events collection
+    Collection name: "analytics"
+    """
+    type: Literal["signup", "cta_click", "view"] = Field(..., description="Event type")
+    email: Optional[EmailStr] = Field(None, description="Associated email if available")
+    page: Optional[str] = Field(None, description="Page path")
+    source: Optional[str] = Field(None, description="UTM or source tag")
+    referrer: Optional[str] = Field(None, description="Referrer URL")
+    user_agent: Optional[str] = Field(None, description="User agent string")

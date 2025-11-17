@@ -1,8 +1,11 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from database import create_document
 
-app = FastAPI()
+app = FastAPI(title="Locat8 API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -12,13 +15,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class WaitlistIn(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
+    source: Optional[str] = None
+
+class AnalyticsIn(BaseModel):
+    type: str
+    email: Optional[EmailStr] = None
+    page: Optional[str] = None
+    source: Optional[str] = None
+
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
+    return {"message": "Locat8 Backend Running"}
 
 @app.get("/api/hello")
 def hello():
     return {"message": "Hello from the backend API!"}
+
+@app.post("/api/waitlist")
+async def join_waitlist(payload: WaitlistIn, request: Request):
+    try:
+        referrer = request.headers.get("referer")
+        user_agent = request.headers.get("user-agent")
+        data = {
+            "email": payload.email,
+            "name": payload.name,
+            "source": payload.source,
+            "referrer": referrer,
+            "user_agent": user_agent,
+        }
+        doc_id = create_document("waitlist", data)
+        return {"ok": True, "id": doc_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/analytics")
+async def analytics_event(payload: AnalyticsIn, request: Request):
+    try:
+        referrer = request.headers.get("referer")
+        user_agent = request.headers.get("user-agent")
+        data = {
+            "type": payload.type,
+            "email": payload.email,
+            "page": payload.page,
+            "source": payload.source,
+            "referrer": referrer,
+            "user_agent": user_agent,
+        }
+        doc_id = create_document("analytics", data)
+        return {"ok": True, "id": doc_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/test")
 def test_database():
